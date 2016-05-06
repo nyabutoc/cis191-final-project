@@ -1,0 +1,51 @@
+#!/bin/bash -ex
+#use bash, be verbose
+
+HOSTNAME=despotify
+SVN_TARGET="/tmp/spotify"
+
+#Check for Root
+function check_for_root ()
+{
+	LUID=$(id -u)
+	if [[ $LUID -ne 0 ]]; then
+		echo "$0 must be run as root"
+		exit 1
+	fi
+}
+
+install()
+{
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get -y \
+        -o DPkg::Options::=--force-confdef \
+        -o DPkg::Options::=--force-confold \
+        install $@
+}
+
+set_hostname()
+{
+	echo "$HOSTNAME" > /etc/hostname
+	sed -i "s|127.0.1.1 \(.*\)|127.0.1.1 $HOSTNAME|" /etc/hosts
+}
+
+get_from_svn()
+{
+	svn co https://despotify.svn.sourceforge.net/svnroot/despotify/src $SVN_TARGET
+}
+
+check_for_root
+#set_hostname
+install libssl-dev \
+	zlib1g-dev \
+	libvorbis-dev \
+	libexpat1-dev \
+	libncursesw5-dev \
+	gstreamer0.10-plugins-base \
+	libgstreamer0.10-dev \
+	libtool \
+	subversion \
+	libao-dev
+
+get_from_svn
+cd $SVN_TARGET && make && make install
